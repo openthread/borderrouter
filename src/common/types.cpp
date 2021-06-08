@@ -27,14 +27,33 @@
  */
 
 #include <arpa/inet.h>
+#include <assert.h>
 #include <sstream>
+#include <stdlib.h>
 #include <sys/socket.h>
 
+#include "common/byteswap.hpp"
 #include "common/code_utils.hpp"
 #include "common/logging.hpp"
 #include "common/types.hpp"
 
 namespace otbr {
+
+std::string BytesToHexString(const uint8_t *aBytes, uint16_t aLength)
+{
+    std::string str;
+    char        hexStr[3];
+
+    str.reserve(aLength * 2);
+
+    for (uint16_t i = 0; i < aLength; i++)
+    {
+        snprintf(hexStr, sizeof(hexStr), "%02x", aBytes[i]);
+        str.append(hexStr);
+    }
+
+    return str;
+}
 
 Ip6Address::Ip6Address(const uint8_t (&aAddress)[16])
 {
@@ -111,28 +130,34 @@ void Ip6Prefix::Set(const otIp6Prefix &aPrefix)
 
 std::string Ip6Prefix::ToString() const
 {
+    std::string    strPrefix = mPrefix.ToString();
     std::stringbuf strBuilder;
-    char           strbuf[INET6_ADDRSTRLEN];
+    char           strbuf[5];
 
-    VerifyOrDie(inet_ntop(AF_INET6, mPrefix.m8, strbuf, sizeof(strbuf)) != nullptr,
-                "Failed to convert Ip6 prefix to string");
-
-    strBuilder.sputn(strbuf, strlen(strbuf));
+    strBuilder.sputn(strPrefix.c_str(), strPrefix.length());
     strBuilder.sputc('/');
 
-    sprintf(strbuf, "%d", mLength);
+    snprintf(strbuf, sizeof(strbuf), "%d", mLength);
     strBuilder.sputn(strbuf, strlen(strbuf));
 
     return strBuilder.str();
 }
 
-std::string MacAddress::ToString(void) const
+Ip6NetworkPrefix::Ip6NetworkPrefix(const uint8_t *aPrefix, uint8_t aLength)
 {
-    char strbuf[sizeof(m8) * 3];
+    OTBR_UNUSED_VARIABLE(aLength);
+    assert(aLength == sizeof(m8));
+    memcpy(m8, aPrefix, sizeof(m8));
+}
 
-    snprintf(strbuf, sizeof(strbuf), "%02x:%02x:%02x:%02x:%02x:%02x", m8[0], m8[1], m8[2], m8[3], m8[4], m8[5]);
+std::string Ip6NetworkPrefix::ToString() const
+{
+    char            strbuf[INET6_ADDRSTRLEN];
+    struct in6_addr addr = {{{0}}};
+
+    memcpy(addr.s6_addr, m8, sizeof(Ip6NetworkPrefix));
+    inet_ntop(AF_INET6, &addr, strbuf, INET6_ADDRSTRLEN);
 
     return std::string(strbuf);
 }
-
 } // namespace otbr

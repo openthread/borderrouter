@@ -64,6 +64,18 @@
 struct otIp6Prefix;
 
 /**
+ * Forward declaration for otExtAddress to avoid including <openthread/platform/radio.h>
+ *
+ */
+struct otExtAddress;
+
+/**
+ * Forward declaration for otExtendedPanId to avoid including <openthread/dataset.h>
+ *
+ */
+struct otExtendedPanId;
+
+/**
  * This enumeration represents error codes used throughout OpenThread Border Router.
  */
 enum otbrError
@@ -96,6 +108,17 @@ enum
 
 static constexpr char kSolicitedMulticastAddressPrefix[]   = "ff02::01:ff00:0";
 static constexpr char kLinkLocalAllNodesMulticastAddress[] = "ff02::01";
+
+/**
+ * This method converts the bytes array to the string in hex format.
+ *
+ * @param[in]  aBytes   A pointer to the bytes array.
+ * @param[in]  aLength  The length of the bytes array.
+ *
+ * @returns The string in hex format.
+ *
+ */
+std::string BytesToHexString(const uint8_t *aBytes, uint16_t aLength);
 
 /**
  * This class implements the Ipv6 address functionality.
@@ -145,7 +168,7 @@ public:
      * @returns  Whether the Ip6 address is smaller than the other address.
      *
      */
-    bool operator<(const Ip6Address &aOther) const { return memcmp(this, &aOther, sizeof(Ip6Address)) < 0; }
+    bool operator<(const Ip6Address &aOther) const { return memcmp(m8, &aOther, sizeof(Ip6Address)) < 0; }
 
     /**
      * This method overloads `==` operator and compares if the Ip6 address is equal to the other address.
@@ -293,7 +316,6 @@ public:
         uint64_t m64[2];
     };
 
-private:
     static Ip6Address FromString(const char *aStr);
 };
 
@@ -309,6 +331,14 @@ public:
      *
      */
     Ip6Prefix(void) { Clear(); }
+
+    /**
+     * Constructor with an Ip6 prefix.
+     *
+     * @param[in]   aAddress    The Ip6 prefix.
+     *
+     */
+    Ip6Prefix(const otIp6Prefix &aPrefix) { Set(aPrefix); }
 
     /**
      * This method sets the Ip6 prefix to an `otIp6Prefix` value.
@@ -345,6 +375,46 @@ public:
 };
 
 /**
+ * This class implements the Ipv6 network prefix functionality.
+ *
+ */
+class Ip6NetworkPrefix
+{
+public:
+    /**
+     * Default constructor.
+     *
+     */
+    Ip6NetworkPrefix(void) { m64[0] = 0; }
+
+    /**
+     * Constructor with an 8-bytes prefix.
+     *
+     * @param[in] aPrefix  A pointer to the buffer containing the 8-bytes prefix.
+     * @param[in] aLength  The length of the prefix, it must be set to 8-bytes.
+     *
+     */
+    Ip6NetworkPrefix(const uint8_t *aPrefix, uint8_t aLength);
+
+    /**
+     * This method returns the string representation for the Ip6 network prefix.
+     *
+     * @returns The string representation of the Ip6 network prefix.
+     *
+     */
+    std::string ToString(void) const;
+
+private:
+    union
+    {
+        uint8_t  m8[8];
+        uint16_t m16[4];
+        uint32_t m32[2];
+        uint64_t m64[1];
+    };
+};
+
+/**
  * This class represents an ethernet MAC address.
  */
 class MacAddress
@@ -367,7 +437,7 @@ public:
      * @returns The string representation of the MAC address.
      *
      */
-    std::string ToString(void) const;
+    std::string ToString(void) const { return BytesToHexString(m8, sizeof(m8)); }
 
     union
     {
@@ -376,6 +446,69 @@ public:
     };
 };
 
+/**
+ * This class represents an extended MAC address.
+ */
+class ExtAddress
+{
+public:
+    /**
+     * Default constructor.
+     *
+     */
+    ExtAddress(void) { memset(m8, 0, sizeof(m8)); }
+
+    /**
+     * Constructor with an extended MAC address.
+     *
+     * @param[in]  aExtAddress  The extended MAC address.
+     *
+     */
+    ExtAddress(const otExtAddress &aExtAddress) { memcpy(m8, &aExtAddress, sizeof(m8)); }
+
+    /**
+     * This method returns the string representation for the Extended address.
+     *
+     * @returns The string representation of the Extended address.
+     *
+     */
+    std::string ToString(void) const { return BytesToHexString(m8, 8); };
+
+private:
+    uint8_t m8[8];
+};
+
+/**
+ * This class represents an extended Pan Id.
+ */
+class ExtPanId
+{
+public:
+    /**
+     * Default constructor.
+     *
+     */
+    ExtPanId(void) { memset(m8, 0, sizeof(m8)); }
+
+    /**
+     * Constructor with an extended Pan Id.
+     *
+     * @param[in] aExtPanId  The extended Pan Id.
+     *
+     */
+    ExtPanId(const otExtendedPanId &aExtPanId) { memcpy(m8, &aExtPanId, sizeof(m8)); }
+
+    /**
+     * This method returns the string representation for the extended Pan Id.
+     *
+     * @returns The string representation of the extended Pan Id.
+     *
+     */
+    std::string ToString(void) const { return BytesToHexString(m8, sizeof(m8)); };
+
+private:
+    uint8_t m8[8];
+};
 } // namespace otbr
 
 #endif // OTBR_COMMON_TYPES_HPP_
