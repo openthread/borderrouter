@@ -71,7 +71,6 @@ RestWebServer *RestWebServer::GetRestWebServer(ControllerOpenThread *aNcp)
 
 void RestWebServer::Init(void)
 {
-    mResource.Init();
     InitializeListenFd();
 }
 
