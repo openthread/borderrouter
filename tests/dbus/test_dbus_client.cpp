@@ -141,6 +141,7 @@ int main()
                         sleep(10);
                         uint64_t             extpanidCheck;
                         std::vector<uint8_t> activeDataset;
+                        DeviceRole           deviceRole;
 
                         if (aError == OTBR_ERROR_NONE)
                         {
@@ -226,6 +227,9 @@ int main()
                                 exit(0);
                             }) == ClientError::ERROR_NONE);
                         });
+                        api->FactoryReset(nullptr);
+                        api->GetDeviceRole(deviceRole);
+                        TEST_ASSERT(deviceRole == otbr::DBus::OTBR_DEVICE_ROLE_DISABLED);
                     });
     });
 
